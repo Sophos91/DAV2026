@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catull c. 83 — KI-Lernwerkzeug</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F4EE;
+    --surface: #FFFFFF;
+    --surface2: #F0EDE6;
+    --border: rgba(80,60,20,0.15);
+    --border2: rgba(80,60,20,0.28);
+    --text: #1E1A14;
+    --text2: #6B6050;
+    --text3: #9E9080;
+    --accent: #7C3D0F;
+    --accent-light: #F5EBE0;
+    --accent-mid: #C4763A;
+    --purple: #4A3880;
+    --purple-light: #EEE9FF;
+    --green: #2A5C3F;
+    --green-light: #E6F2EB;
+    --radius: 10px;
+    --radius-lg: 16px;
+    --font-serif: 'EB Garamond', Georgia, serif;
+    --font-sans: 'DM Sans', system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* Header */
+  .header {
+    background: var(--text);
+    color: var(--bg);
+    padding: 1.25rem 2rem;
+    display: flex;
+    align-items: baseline;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .header-title {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+  }
+  .header-sub {
+    font-size: 13px;
+    opacity: 0.55;
+    font-weight: 300;
+  }
+
+  /* Key bar */
+  .key-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: .75rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .key-bar label { font-size: 12px; font-weight: 500; color: var(--text2); white-space: nowrap; }
+  .key-bar input {
+    flex: 1;
+    min-width: 220px;
+    max-width: 380px;
+    padding: 6px 10px;
+    font-size: 13px;
+    font-family: monospace;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+  }
+  .key-bar input:focus { border-color: var(--accent-mid); }
+  .key-bar button {
+    padding: 6px 14px;
+    font-size: 13px;
+    font-family: var(--font-sans);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    background: var(--text);
+    color: var(--bg);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .key-bar button:hover { background: var(--accent); }
+  .key-status { font-size: 12px; color: var(--text3); }
+  .key-status.ok { color: var(--green); font-weight: 500; }
+  .key-status.err { color: #A32D2D; }
+
+  /* Layout */
+  .layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: calc(100vh - 100px);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 1.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .sidebar-section-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: .5rem;
+  }
+  .latin-sidebar {
+    font-family: var(--font-serif);
+    font-size: 14px;
+    line-height: 1.9;
+  }
+  .latin-sidebar .sv {
+    display: block;
+    padding: 2px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background .15s;
+    opacity: 0.45;
+  }
+  .latin-sidebar .sv:hover { background: var(--accent-light); opacity: 1; }
+  .latin-sidebar .sv.active { opacity: 1; font-weight: 500; background: var(--accent-light); color: var(--accent); }
+  .latin-sidebar .sv.done { opacity: 1; color: var(--green); background: var(--green-light); }
+
+  .progress-wrap { }
+  .progress-top { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+  .progress-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 5px; background: var(--green); border-radius: 3px; transition: width .4s; }
+
+  .tabs-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .tab-nav-btn {
+    padding: 7px 10px;
+    font-size: 13px;
+    font-family: var(--font-sans);
+    text-align: left;
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    background: none;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .tab-nav-btn:hover { background: var(--surface2); color: var(--text); }
+  .tab-nav-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  /* Main content */
+  .main {
+    padding: 2rem;
+    overflow-y: auto;
+  }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* --- TUTOR PANEL --- */
+  .verse-heading {
+    font-family: var(--font-serif);
+    font-size: 19px;
+    font-style: italic;
+    color: var(--accent);
+    background: var(--accent-light);
+    border: 1px solid rgba(124,61,15,0.15);
+    border-radius: var(--radius-lg);
+    padding: .75rem 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  .verse-heading span {
+    font-size: 11px;
+    font-style: normal;
+    font-family: var(--font-sans);
+    font-weight: 500;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--accent-mid);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .chat-container {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--surface);
+    margin-bottom: 1rem;
+  }
+  .chat-messages {
+    min-height: 280px;
+    max-height: 420px;
+    overflow-y: auto;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    scroll-behavior: smooth;
+  }
+  .msg { display: flex; flex-direction: column; max-width: 85%; }
+  .msg.tutor { align-self: flex-start; }
+  .msg.user { align-self: flex-end; }
+  .msg-label { font-size: 10px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px; color: var(--text3); }
+  .msg.user .msg-label { text-align: right; }
+  .msg-bubble {
+    padding: .6rem 1rem;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+  .msg.tutor .msg-bubble {
+    background: var(--surface2);
+    border-radius: 4px 14px 14px 14px;
+    color: var(--text);
+  }
+  .msg.user .msg-bubble {
+    background: var(--text);
+    color: var(--bg);
+    border-radius: 14px 4px 14px 14px;
+  }
+
+  .chat-input-area {
+    border-top: 1px solid var(--border);
+    display: flex;
+  }
+  .chat-input-area textarea {
+    flex: 1;
+    padding: .75rem 1rem;
+    font-size: 14px;
+    font-family: var(--font-sans);
+    border: none;
+    background: var(--surface);
+    color: var(--text);
+    resize: none;
+    outline: none;
+    min-height: 50px;
+    line-height: 1.5;
+  }
+  .chat-input-area button {
+    padding: .75rem 1.25rem;
+    font-size: 13px;
+    font-family: var(--font-sans);
+    font-weight: 500;
+    border: none;
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .chat-input-area button:hover:not(:disabled) { background: var(--text); color: var(--bg); }
+  .chat-input-area button:disabled { opacity: .35; cursor: not-allowed; }
+
+  .quick-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .quick-btn {
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    color: var(--text2);
+    cursor: pointer;
+    font-family: var(--font-sans);
+    transition: all .15s;
+  }
+  .quick-btn:hover { background: var(--surface2); color: var(--text); border-color: var(--text); }
+  .quick-btn.done-btn { border-color: var(--green); color: var(--green); }
+  .quick-btn.done-btn:hover { background: var(--green-light); }
+
+  /* --- INTERP PANEL --- */
+  .section-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: .3rem;
+  }
+  .section-desc { font-size: 13px; color: var(--text2); margin-bottom: 1rem; }
+
+  .interp-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem; }
+  .interp-btn {
+    font-size: 13px;
+    padding: 7px 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    font-family: var(--font-sans);
+    transition: all .15s;
+  }
+  .interp-btn:hover:not(:disabled) { background: var(--surface2); border-color: var(--text); }
+  .interp-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+  .output-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    font-size: 14px;
+    line-height: 1.75;
+    color: var(--text);
+    white-space: pre-wrap;
+    min-height: 60px;
+  }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+  .task-card {
+    background: var(--purple-light);
+    border: 1px solid rgba(74,56,128,0.2);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .task-card-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--purple);
+    margin-bottom: .6rem;
+  }
+  .task-card p { font-size: 14px; color: #2A2050; line-height: 1.7; }
+
+  .sketch-textarea {
+    width: 100%;
+    padding: .9rem 1rem;
+    font-size: 14px;
+    font-family: var(--font-serif);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    color: var(--text);
+    resize: vertical;
+    outline: none;
+    min-height: 160px;
+    line-height: 1.7;
+  }
+  .sketch-textarea:focus { border-color: var(--purple); }
+
+  .submit-row { display: flex; align-items: center; gap: 10px; margin-top: .75rem; flex-wrap: wrap; }
+  .submit-btn {
+    padding: 8px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--font-sans);
+    border-radius: var(--radius);
+    border: 1px solid var(--purple);
+    background: var(--purple);
+    color: #EEE9FF;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .submit-btn:hover:not(:disabled) { background: #362A60; border-color: #362A60; }
+  .submit-btn:disabled { opacity: .35; cursor: not-allowed; }
+  .submit-hint { font-size: 12px; color: var(--text3); }
+
+  .sketch-ai-note { font-size: 12px; color: var(--text3); margin-top: .4rem; margin-bottom: .75rem; }
+
+  .sketch-output {
+    font-family: var(--font-serif);
+    font-size: 15px;
+    line-height: 1.85;
+  }
+
+  /* Typing indicator */
+  .typing-dots { display: inline-flex; gap: 4px; align-items: center; padding: 4px 0; }
+  .typing-dots span {
+    width: 6px; height: 6px;
+    background: var(--text3);
+    border-radius: 50%;
+    animation: tdot .9s infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: .2s; }
+  .typing-dots span:nth-child(3) { animation-delay: .4s; }
+  @keyframes tdot { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-5px)} }
+
+  /* Responsive */
+  @media(max-width: 680px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 1px solid var(--border); padding: 1rem; }
+    .main { padding: 1rem; }
+    .header { padding: 1rem; }
+    .key-bar { padding: .75rem 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">Catull, carmen 83</div>
+  <div class="header-sub">KI-gestütztes Lernwerkzeug · Übersetzungstutor &amp; Textarbeit</div>
+</div>
+
+<div class="key-bar">
+  <label>Anthropic API-Key:</label>
+  <input type="password" id="apiKey" placeholder="sk-ant-…">
+  <button onclick="saveKey()">Speichern</button>
+  <span class="key-status" id="keyStatus">Kein Key hinterlegt</span>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div>
+      <div class="sidebar-section-label">Text</div>
+      <div class="latin-sidebar" id="sidebarVerses"></div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-top">
+        <span>Fortschritt</span>
+        <span id="progressLabel">0 / 6</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+    </div>
+    <div>
+      <div class="sidebar-section-label">Bereich</div>
+      <div class="tabs-nav">
+        <button class="tab-nav-btn active" onclick="switchTab('tutor',this)">Übersetzungstutor</button>
+        <button class="tab-nav-btn" onclick="switchTab('interp',this)">Textinterpretation &amp; Sketch</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- TUTOR PANEL -->
+    <div class="panel active" id="panel-tutor">
+      <div class="verse-heading" id="verseHeading">
+        <span>Aktueller Vers</span>
+        <span id="verseText"></span>
+      </div>
+      <div class="chat-container">
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-area">
+          <textarea id="chatInput" placeholder="Deine Antwort oder Frage …" rows="2"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"></textarea>
+          <button id="sendBtn" onclick="sendMsg()">Senden</button>
+        </div>
+      </div>
+      <div class="quick-btns">
+        <button class="quick-btn" onclick="requestHint()">Grammatikhinweis</button>
+        <button class="quick-btn" onclick="requestVocab()">Vokabelhilfe</button>
+        <button class="quick-btn done-btn" onclick="markDone()">✓ Vers abgehakt</button>
+      </div>
+    </div>
+
+    <!-- INTERP PANEL -->
+    <div class="panel" id="panel-interp">
+
+      <div class="section-title">Textinterpretation</div>
+      <div class="section-desc">Wähle eine Frage — die KI analysiert das Gedicht.</div>
+      <div class="interp-btns">
+        <button class="interp-btn" id="ib1" onclick="runInterp('worum','interpOut')">Worum geht es?</button>
+        <button class="interp-btn" id="ib2" onclick="runInterp('rhetorik','interpOut')">Rhetorische Mittel</button>
+        <button class="interp-btn" id="ib3" onclick="runInterp('psychologie','interpOut')">Psychologie des Erzählers</button>
+        <button class="interp-btn" id="ib4" onclick="runInterp('modern','interpOut')">Moderner Bezug</button>
+      </div>
+      <div class="output-box" id="interpOut">Wähle oben eine Frage, um die KI-Analyse zu starten.</div>
+
+      <hr class="divider">
+
+      <div class="section-title">Sketch schreiben</div>
+      <div class="section-desc">Schreibe das Carmen als kurzen deutschen Sketch um — und erhalte danach KI-Feedback.</div>
+
+      <div class="task-card">
+        <div class="task-card-label">Aufgabe</div>
+        <p>Schreibe das Gedicht als kurzen Sketch (Szene oder Dialog) auf Deutsch um. Die Situation soll erkennbar bleiben: Lesbia spricht schlecht über den Erzähler im Beisein ihres Mannes — doch was verrät ihr Verhalten wirklich? Erfinde Namen, einen konkreten Schauplatz und Dialoge. Transportiere dabei die psychologische Pointe Catulls: <em>Wer zu viel schimpft, dem liegt noch etwas daran.</em></p>
+      </div>
+
+      <textarea class="sketch-textarea" id="sketchInput" placeholder="Schreibe hier deinen Sketch …"></textarea>
+      <div class="submit-row">
+        <button class="submit-btn" id="sketchSubmitBtn" onclick="submitSketch()">Feedback erhalten</button>
+        <span class="submit-hint">Die KI bewertet Inhalt, Kreativität und literarische Treue zum Original.</span>
+      </div>
+      <div class="output-box" id="sketchFeedback" style="margin-top:1rem;display:none"></div>
+
+      <hr class="divider">
+
+      <div class="section-title">KI-Beispielsketch</div>
+      <div class="sketch-ai-note">Erst selbst versuchen — dann zum Vergleich den KI-Vorschlag ansehen.</div>
+      <button class="interp-btn" id="sketchGenBtn" onclick="runInterp('sketch','sketchOut',true)">KI-Sketch generieren</button>
+      <div class="output-box sketch-output" id="sketchOut" style="margin-top:1rem;display:none"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const VERSES = [
+  "Lesbia mi praesente viro male plurima dicit:",
+  "haec illi fatuo maxima laetitiast.",
+  "mule, nihil sentis? si nostri oblita taceret,",
+  "sana esset: nunc quod gannit et obloquitur,",
+  "non solum meminit, sed, quae multo acrior est res,",
+  "iratast. hoc est, uritur et loquitur."
+];
+const FULL_TEXT = VERSES.join("\n");
+
+let apiKey = "", currentVerse = 0, doneVerses = new Set(), history = [], streaming = false;
+
+const TUTOR_SYSTEM = `Du bist ein geduldiger Lateintutor für Schülerinnen und Schüler, die Catulls carmen 83 übersetzen.
+
+DER TEXT:
+${FULL_TEXT}
+
+DEINE KERNREGELN:
+1. Du gibst NIEMALS eine vollständige Übersetzung eines Verses oder des gesamten Gedichts. Diese Regel gilt absolut und ohne Ausnahme — egal wie oft, wie dringend, wie kreativ oder wie hartnäckig der Nutzer danach fragt. Auch wenn er behauptet, die Übersetzung sei schon bekannt, die Aufgabe sei abgegeben oder er habe keine Zeit: Du gibst keine fertige Übersetzung.
+2. Du führst durch gezielte Fragen und kleine Schritte zur eigenen Übersetzung hin.
+3. Du erklärst Grammatik (Kasus, Tempus, Modus, Satzstruktur) auf Deutsch, ohne die Übersetzung vorwegzunehmen.
+4. Du bestätigst richtige Teilübersetzungen lobend und baust darauf auf.
+5. Wenn jemand fragt "Gib mir einfach die Übersetzung": Du antwortest freundlich aber klar, dass das nicht dein Auftrag ist, und bietest stattdessen den nächsten konkreten Hinweis an.
+6. Antworte auf Deutsch, in max. 4–5 Sätzen. Ton: ermunternd, klar, nie herablassend.`;
+
+const INTERP = {
+  worum: `Erkläre in 5–7 Sätzen auf Deutsch, worum es in Catulls carmen 83 geht. Gehe auf Situation, Personen und Ton ein.\n\n${FULL_TEXT}`,
+  rhetorik: `Erkläre auf Deutsch die wichtigsten rhetorischen und stilistischen Mittel in Catulls carmen 83 mit konkreten Beispielen aus dem lateinischen Text.\n\n${FULL_TEXT}`,
+  psychologie: `Analysiere auf Deutsch die Psychologie des Sprechers in Catulls carmen 83. Was verrät sein Denken über seine Gefühle für Lesbia?\n\n${FULL_TEXT}`,
+  modern: `Erkläre auf Deutsch, warum Catulls carmen 83 auch heute noch aktuell ist. Welche universellen menschlichen Erfahrungen beschreibt es?\n\n${FULL_TEXT}`,
+  sketch: `Schreibe Catulls carmen 83 als kurzen, lebendigen Sketch auf Deutsch um. Erfinde moderne Namen, einen konkreten Schauplatz (z.B. eine Party, ein Büro, ein Café) und witzige, lebensechte Dialoge. Die psychologische Pointe des Originals muss erhalten bleiben: Wer zu viel schimpft, dem liegt noch etwas daran. Beginne sofort mit dem Sketch, ohne Vorrede.\n\nOriginaltext:\n${FULL_TEXT}`
+};
+
+function saveKey() {
+  const v = document.getElementById("apiKey").value.trim();
+  if (!v.startsWith("sk-")) {
+    setKeyStatus("Ungültiges Format", "err"); return;
+  }
+  apiKey = v;
+  setKeyStatus("Key gespeichert ✓", "ok");
+}
+function setKeyStatus(msg, cls) {
+  const el = document.getElementById("keyStatus");
+  el.textContent = msg; el.className = "key-status " + cls;
+}
+
+function switchTab(name, el) {
+  document.querySelectorAll(".tab-nav-btn").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+  el.classList.add("active");
+  document.getElementById("panel-" + name).classList.add("active");
+}
+
+function renderSidebar() {
+  document.getElementById("sidebarVerses").innerHTML = VERSES.map((v, i) =>
+    `<span class="sv${i === currentVerse ? ' active' : ''}${doneVerses.has(i) ? ' done' : ''}" onclick="selectVerse(${i})">${v}${doneVerses.has(i) ? ' ✓' : ''}</span>`
+  ).join("");
+}
+
+function updateProgress() {
+  const n = doneVerses.size, total = VERSES.length;
+  document.getElementById("progressFill").style.width = Math.round(n / total * 100) + "%";
+  document.getElementById("progressLabel").textContent = n + " / " + total;
+}
+
+function selectVerse(i) {
+  currentVerse = i; history = [];
+  renderSidebar();
+  document.getElementById("verseText").textContent = VERSES[i];
+  const msgs = document.getElementById("chatMessages");
+  msgs.innerHTML = "";
+  addMsg("tutor", `Gut, wir arbeiten an Vers ${i + 1}:\n\n„${VERSES[i]}"\n\nWas fällt dir zuerst auf? Erkennst du einzelne Wörter oder grammatische Formen?`);
+}
+
+function addMsg(role, text) {
+  const msgs = document.getElementById("chatMessages");
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  div.innerHTML = `<div class="msg-label">${role === "tutor" ? "Tutor" : "Du"}</div><div class="msg-bubble">${text.replace(/\n/g, "<br>")}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function showTyping() {
+  const msgs = document.getElementById("chatMessages");
+  const div = document.createElement("div");
+  div.className = "msg tutor"; div.id = "typing-ind";
+  div.innerHTML = `<div class="msg-label">Tutor</div><div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(div); msgs.scrollTop = msgs.scrollHeight;
+}
+
+async function callClaude(system, messages, onChunk) {
+  if (!apiKey) return "Bitte zuerst den API-Key speichern.";
+  try {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 800, system, messages, stream: true })
+    });
+    if (!resp.ok) { const e = await resp.json(); return "Fehler: " + (e.error?.message || resp.status); }
+    const reader = resp.body.getReader(), dec = new TextDecoder();
+    let full = "";
+    while (true) {
+      const { done, value } = await reader.read(); if (done) break;
+      for (const line of dec.decode(value).split("\n")) {
+        if (!line.startsWith("data:")) continue;
+        const d = line.slice(5).trim(); if (d === "[DONE]") break;
+        try { const j = JSON.parse(d); if (j.type === "content_block_delta" && j.delta?.text) { full += j.delta.text; if (onChunk) onChunk(full); } } catch (e) {}
+      }
+    }
+    return full;
+  } catch (e) { return "Netzwerkfehler: " + e.message; }
+}
+
+async function sendMsg() {
+  if (streaming) return;
+  const inp = document.getElementById("chatInput"), txt = inp.value.trim();
+  if (!txt) return; inp.value = "";
+  addMsg("user", txt);
+  history.push({ role: "user", content: `[Vers ${currentVerse + 1}] ${txt}` });
+  await tutorRespond();
+}
+
+async function requestHint() {
+  if (streaming) return;
+  history.push({ role: "user", content: `Gib mir einen Grammatikhinweis zu Vers ${currentVerse + 1}: „${VERSES[currentVerse]}"` });
+  addMsg("user", "[Grammatikhinweis]");
+  await tutorRespond();
+}
+
+async function requestVocab() {
+  if (streaming) return;
+  history.push({ role: "user", content: `Erkläre die schwierigen Vokabeln in Vers ${currentVerse + 1}: „${VERSES[currentVerse]}" — ohne den Vers zu übersetzen.` });
+  addMsg("user", "[Vokabelhilfe]");
+  await tutorRespond();
+}
+
+async function tutorRespond() {
+  streaming = true;
+  document.getElementById("sendBtn").disabled = true;
+  showTyping();
+  const msgs = document.getElementById("chatMessages");
+  let rDiv = null;
+  const full = await callClaude(TUTOR_SYSTEM, history, text => {
+    if (!rDiv) {
+      document.getElementById("typing-ind")?.remove();
+      rDiv = document.createElement("div"); rDiv.className = "msg tutor";
+      rDiv.innerHTML = `<div class="msg-label">Tutor</div><div class="msg-bubble" id="stream-bubble"></div>`;
+      msgs.appendChild(rDiv);
+    }
+    document.getElementById("stream-bubble").innerHTML = text.replace(/\n/g, "<br>");
+    msgs.scrollTop = msgs.scrollHeight;
+  });
+  if (!rDiv) { document.getElementById("typing-ind")?.remove(); addMsg("tutor", full); }
+  history.push({ role: "assistant", content: full });
+  streaming = false;
+  document.getElementById("sendBtn").disabled = false;
+}
+
+function markDone() {
+  doneVerses.add(currentVerse); updateProgress(); renderSidebar();
+  const next = [...Array(VERSES.length).keys()].find(i => !doneVerses.has(i));
+  if (next !== undefined) selectVerse(next);
+}
+
+const INTERP_BTNS = ["ib1", "ib2", "ib3", "ib4", "sketchGenBtn"];
+
+async function runInterp(type, outputId, isSketch = false) {
+  if (streaming) return;
+  if (!apiKey) { document.getElementById(outputId).textContent = "Bitte zuerst den API-Key speichern."; document.getElementById(outputId).style.display = "block"; return; }
+  streaming = true;
+  INTERP_BTNS.forEach(id => { const el = document.getElementById(id); if (el) el.disabled = true; });
+  const box = document.getElementById(outputId);
+  box.style.display = "block"; box.textContent = "";
+  if (isSketch) box.classList.add("sketch-output"); else box.classList.remove("sketch-output");
+  const full = await callClaude("Du bist ein Latein-Literaturexperte. Antworte präzise auf Deutsch.", [{ role: "user", content: INTERP[type] }], text => { box.textContent = text; });
+  if (!box.textContent) box.textContent = full;
+  streaming = false;
+  INTERP_BTNS.forEach(id => { const el = document.getElementById(id); if (el) el.disabled = false; });
+}
+
+async function submitSketch() {
+  if (streaming) return;
+  const sketch = document.getElementById("sketchInput").value.trim();
+  const fb = document.getElementById("sketchFeedback");
+  if (!sketch) { fb.style.display = "block"; fb.textContent = "Bitte schreibe zuerst deinen Sketch."; return; }
+  if (!apiKey) { fb.style.display = "block"; fb.textContent = "Bitte zuerst den API-Key speichern."; return; }
+  streaming = true;
+  document.getElementById("sketchSubmitBtn").disabled = true;
+  fb.style.display = "block"; fb.textContent = "";
+  const prompt = `Ein Schüler / eine Schülerin hat Catulls carmen 83 als deutschen Sketch umgeschrieben. Gib konstruktives, ermutigendes Feedback auf Deutsch zu: (1) Wie gut wird die Situation des Originals transportiert? (2) Wie kreativ und lebendig ist der Sketch? (3) Wird die psychologische Pointe deutlich? (4) Was ist besonders gelungen? (5) Was könnte noch verbessert werden?\n\nOriginal (Catull c. 83):\n${FULL_TEXT}\n\nSketch:\n${sketch}`;
+  const full = await callClaude("Du bist ein einfühlsamer Lateinlehrer, der kreative Schülerarbeiten beurteilt. Antworte auf Deutsch, ermutigend und konkret.", [{ role: "user", content: prompt }], text => { fb.textContent = text; });
+  if (!fb.textContent) fb.textContent = full;
+  streaming = false;
+  document.getElementById("sketchSubmitBtn").disabled = false;
+}
+
+// Init
+renderSidebar();
+updateProgress();
+document.getElementById("verseText").textContent = VERSES[0];
+addMsg("tutor", "Willkommen! Trage oben deinen API-Key ein und wähle dann links einen Vers aus — ich begleite dich Schritt für Schritt durch die Übersetzung. Eine fertige Übersetzung bekommst du von mir nicht, aber ich helfe dir, selbst darauf zu kommen.");
+</script>
+</body>
+</html>
